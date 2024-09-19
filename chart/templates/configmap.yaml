@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sps-profiler
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: sps-profiler
+data:
+  config-kubernetes.yaml: |
+    namespace: {{ .Release.Namespace }}

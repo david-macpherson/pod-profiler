@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pod-profiler
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: pod-profiler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pod-profiler
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app.kubernetes.io/name: pod-profiler
+    spec:
+      serviceAccountName: pod-profiler
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 5
+      volumes:
+        - name: config-volume
+          configMap:
+            name: pod-profiler
+            defaultMode: 420
+      containers:
+        - name: pod-profiler
+          image: "{{ .Values.profiler.registry }}/{{ .Values.profiler.repository }}/{{ .Values.profiler.image }}:{{ .Values.profiler.version }}"
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          resources:
+            limits:
+              cpu: {{ .Values.profiler.resources.limits.cpu }}
+              memory: {{ .Values.profiler.resources.limits.memory }}
+            requests:
+              cpu: {{ .Values.profiler.resources.requests.cpu }}
+              memory: {{ .Values.profiler.resources.requests.memory }}
+          volumeMounts:
+            - name: config-volume
+              mountPath: /pod-profiler/config
+          imagePullPolicy: Always
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/os
+                    operator: In
+                    values:
+                      - linux
