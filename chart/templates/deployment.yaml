@@ -28,10 +28,10 @@ spec:
         - name: pod-profiler
           image: "{{ .Values.profiler.registry }}/{{ .Values.profiler.repository }}/{{ .Values.profiler.image }}:{{ .Values.profiler.version }}"
           env:
-            - name: NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
+            - name: XDG_CONFIG_HOME
+              value: /pod-profiler/config
+            - name: PROFILER_CONFIG_FILENAME
+              value: config-kubernetes.yaml           
           resources:
             limits:
               cpu: {{ .Values.profiler.resources.limits.cpu }}
@@ -41,7 +41,7 @@ spec:
               memory: {{ .Values.profiler.resources.requests.memory }}
           volumeMounts:
             - name: config-volume
-              mountPath: /pod-profiler/config
+              mountPath: /pod-profiler/config/pod-profiler
           imagePullPolicy: Always
       affinity:
         nodeAffinity:
