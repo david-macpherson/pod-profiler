@@ -1,85 +1,96 @@
 package config
 
 import (
-	"fmt"
 	"log"
 	"os"
-	kubernetesClient "pod_profiler/pkg/api/kubernetes-client"
+	"pod_profiler/pkg/api/config/env"
+	"pod_profiler/pkg/api/defaults"
+
+	"github.com/spf13/viper"
 )
 
 // This holds the config for the entire application
 type Config struct {
 
 	// The namespace the application is running in
-	Namespace string `yaml:"namespace"`
+	Namespace string `json:"namespace"`
 
-	// The client used to access kubernetes resources
-	K8sClient *kubernetesClient.Client
+	Deployments []string `json:"deployments"`
+
+	*viper.Viper `json:"-"`
 }
 
-func NewConfig() (*Config, error) {
-
-	// Load the config
-	config, err := load()
-	if err != nil {
-		return nil, err
-	}
-
-	log.Default().Printf("name: %s\n", config.Namespace)
-
-	// create a new k8s client
-	config.K8sClient, err = newK8sClient(config.Namespace)
-	if err != nil {
-		return nil, err
-	}
-
-	// Return the config and a nil error indicating a success
-	return config, nil
-
-}
-
-func load() (*Config, error) {
+func Load(watchConfig bool) (*Config, error) {
 	// Initialise an empty config
 	config := &Config{}
 
-	// Initialise a new viper
-	namespace, exists := os.LookupEnv("NAMESPACE")
-	if !exists {
-		return nil, fmt.Errorf("NAMESPACE env var does not exists")
+	config.Viper = viper.New()
+	config.Viper.SetDefault("deployments", []string{"bob"})
+	config.Viper.SetDefault("namespace", defaults.NAMESPACE)
+	config.Viper.BindEnv("namespace", "NAMESPACE")
+
+	configName, configNameExists := os.LookupEnv("PROFILER_CONFIG_FILENAME")
+
+	configDirs, err := env.GetConfigDirectories("pod-profiler", false)
+	if err != nil {
+		return nil, err
+	}
+	// Add the configuration directories to our search list
+	for _, dir := range configDirs {
+		config.Viper.AddConfigPath(dir)
 	}
 
-	if namespace == "" {
-		return nil, fmt.Errorf("NAMESPACE can not be blank")
+	// Attempt to parse our YAML configuration file if it exists in one of the directories
+	if configNameExists {
+		config.Viper.SetConfigName(configName)
+	} else {
+		config.Viper.SetConfigName("config")
 	}
 
-	config.Namespace = namespace
+	config.Viper.SetConfigType("json")
+	useConfigFile := true
+	if err := config.Viper.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			log.Default().Println("Configuration file not found, using configuration values from environment variables")
+			useConfigFile = false
+		} else {
+			return nil, err
+		}
+	}
 
-	// Return the config and nil error to indicate a success
+	// Watch the config file (if we found one) and ensure that we update our config when a change is detected
+	if useConfigFile {
+
+		// Check the watch config is true
+		if watchConfig {
+
+			// Start watching the config
+			config.Viper.WatchConfig()
+		}
+	}
+
+	// Unmarshal the config
+	if err := config.Viper.Unmarshal(config); err != nil {
+		return nil, err
+	}
+
 	return config, nil
 }
 
-func newK8sClient(namespace string) (*kubernetesClient.Client, error) {
+func (config *Config) VarDump() {
 
-	log.Default().Println("Create kubernetes client")
+	// Print our configuration values
+	log.Default().Println("")
+	log.Default().Println("-------------------------------")
+	log.Default().Println("")
+	log.Default().Printf("namespace:  %s\n", config.Namespace)
+	log.Default().Printf("deployments:\n")
 
-	// Create the kubernetes client
-	client, err := kubernetesClient.NewClient()
-	if err != nil {
-		return nil, fmt.Errorf("error creating kubernetes client: %s", err.Error())
+	for _, deployment := range config.Deployments {
+		log.Default().Printf("\t%s\n", deployment)
 	}
 
-	// Create a list of resources to cache
-	cacheResources := []kubernetesClient.CachedResource{
-		kubernetesClient.CachedResource_Pod,
-	}
-
-	log.Default().Println("Starting to sync the cache")
-
-	// Start to sync the cache
-	client.BuildAndSyncNamedspacedCache(namespace, cacheResources...)
-
-	log.Default().Println("Cache sync complete")
-
-	// Return the new client and nil error to indicate a success
-	return client, nil
+	log.Default().Println("")
+	log.Default().Println("-------------------------------")
+	log.Default().Println("")
 }
