@@ -12,8 +12,6 @@ func main() {
 		log.Default().Fatalf("error initialising config: %s", err.Error())
 	}
 
-	profiler.Config.VarDump()
-
 	go profiler.Start()
 	for err := range profiler.Errors {
 		log.Printf("%s\n", err.Error())
