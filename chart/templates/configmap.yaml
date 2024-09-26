@@ -9,6 +9,8 @@ data:
   config-kubernetes.json: |
     {
       "namespace": {{ .Release.Namespace | quote }},
+      "httpport": {{ .Values.http.port }},
+      "resultspath": {{ .Values.results.path | quote }},
       "deployments": [
         "sps-operator"
       ]
