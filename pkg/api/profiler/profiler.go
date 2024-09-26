@@ -72,6 +72,7 @@ func newK8sClient(namespace string) (*kubernetesClient.Client, error) {
 	// Create a list of resources to cache
 	cacheResources := []kubernetesClient.CachedResource{
 		kubernetesClient.CachedResource_Pod,
+		kubernetesClient.CachedResource_StatefulSet,
 	}
 
 	log.Default().Println("Starting to sync the cache")
@@ -158,7 +159,7 @@ func (profiler *Profiler) OnConfigChange(event fsnotify.Event) {
 func (profiler *Profiler) initialiseCaptures() error {
 	captures := []*capture.Capture{}
 
-	for _, deployment := range profiler.Config.Deployments {
+	for _, deployment := range profiler.Config.PodLabels {
 		capture, err := capture.New(profiler.K8sClient, profiler.Config.ResultsPath, deployment)
 		if err != nil {
 			return err

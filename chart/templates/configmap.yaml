@@ -11,7 +11,8 @@ data:
       "namespace": {{ .Release.Namespace | quote }},
       "httpport": {{ .Values.http.port }},
       "resultspath": {{ .Values.results.path | quote }},
-      "deployments": [
-        "sps-operator"
+      "podlabels": [
+        "sps-operator",
+        "sps-signalling-server-demo"
       ]
     }

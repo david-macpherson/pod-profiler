@@ -15,7 +15,7 @@ type Config struct {
 	// The namespace the application is running in
 	Namespace string `json:"namespace"`
 
-	Deployments []string `json:"deployments"`
+	PodLabels []string `json:"podlabels"`
 
 	HttpPort int `json:"httpport"`
 
@@ -29,7 +29,7 @@ func Load(watchConfig bool) (*Config, error) {
 	config := &Config{}
 
 	config.Viper = viper.New()
-	config.Viper.SetDefault("deployments", []string{"bob"})
+	config.Viper.SetDefault("podlabels", []string{})
 	config.Viper.SetDefault("namespace", defaults.NAMESPACE)
 	config.Viper.SetDefault("httpport", defaults.HTTP_PORT)
 	config.Viper.SetDefault("resultspath", defaults.RESULTS_PATH)
@@ -93,9 +93,9 @@ func (config *Config) VarDump() {
 	log.Default().Printf("namespace:  %s\n", config.Namespace)
 	log.Default().Printf("http port:  %v\n", config.HttpPort)
 	log.Default().Printf("results dir:  %s\n", config.ResultsPath)
-	log.Default().Printf("deployments:\n")
+	log.Default().Printf("Pod Labels:\n")
 
-	for _, deployment := range config.Deployments {
+	for _, deployment := range config.PodLabels {
 		log.Default().Printf("\t%s\n", deployment)
 	}
 
