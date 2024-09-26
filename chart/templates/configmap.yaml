@@ -12,7 +12,15 @@ data:
       "httpport": {{ .Values.http.port }},
       "resultspath": {{ .Values.results.path | quote }},
       "podlabels": [
+        "sps-api",
+        "sps-cloud-keeper",
+        "sps-coturn",
+        "sps-dashboard",
+        "sps-frontend-demo",
+        "sps-metric-service",
         "sps-operator",
+        "sps-instance-manager-demo",
+        "sps-auth-demo",
         "sps-signalling-server-demo"
       ]
     }
