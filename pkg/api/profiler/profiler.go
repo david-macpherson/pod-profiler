@@ -3,8 +3,10 @@ package profiler
 import (
 	"fmt"
 	"log"
+	"os"
 	"pod_profiler/pkg/api/capture"
 	"pod_profiler/pkg/api/config"
+	httpserver "pod_profiler/pkg/api/http-server"
 	kubernetesClient "pod_profiler/pkg/api/kubernetes-client"
 
 	"github.com/fsnotify/fsnotify"
@@ -15,6 +17,8 @@ type Profiler struct {
 
 	// The client used to access kubernetes resources
 	K8sClient *kubernetesClient.Client
+
+	httpServer *httpserver.HttpServer
 
 	Errors chan error
 
@@ -32,17 +36,25 @@ func New() (*Profiler, error) {
 		return nil, err
 	}
 
+	config.VarDump()
+
 	// create a new k8s client
 	K8sClient, err := newK8sClient(config.Namespace)
 	if err != nil {
 		return nil, err
 	}
 
+	httpServer, err := httpserver.New(config)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Profiler{
-		Config:    config,
-		K8sClient: K8sClient,
-		Errors:    make(chan error),
-		running:   make(chan bool),
+		Config:     config,
+		K8sClient:  K8sClient,
+		httpServer: httpServer,
+		Errors:     make(chan error),
+		running:    make(chan bool),
 	}, nil
 
 }
@@ -75,7 +87,16 @@ func newK8sClient(namespace string) (*kubernetesClient.Client, error) {
 
 func (profiler *Profiler) Start() error {
 
+	if _, err := os.Stat(profiler.Config.ResultsPath); os.IsNotExist(err) {
+		err := os.Mkdir(profiler.Config.ResultsPath, os.ModePerm)
+		if err != nil {
+			return err
+		}
+	}
+
 	go profiler.Config.OnConfigChange(profiler.OnConfigChange)
+
+	go profiler.httpServer.Start()
 
 	go profiler.process()
 
@@ -138,7 +159,7 @@ func (profiler *Profiler) initialiseCaptures() error {
 	captures := []*capture.Capture{}
 
 	for _, deployment := range profiler.Config.Deployments {
-		capture, err := capture.New(profiler.K8sClient, deployment)
+		capture, err := capture.New(profiler.K8sClient, profiler.Config.ResultsPath, deployment)
 		if err != nil {
 			return err
 		}
