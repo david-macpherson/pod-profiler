@@ -18,12 +18,13 @@ import (
 )
 
 type Capture struct {
-	client     *kubernetesClient.Client
-	csvFile    *os.File
-	Deployment string `json:"deployment"`
-	OnRecord   chan Record
-	Errors     chan error
-	running    chan bool
+	client      *kubernetesClient.Client
+	csvFile     *os.File
+	resultsPath string
+	Deployment  string `json:"deployment"`
+	OnRecord    chan Record
+	Errors      chan error
+	running     chan bool
 }
 
 type Record struct {
@@ -42,7 +43,7 @@ type Container struct {
 	Memory int64  `csv:"memory"`
 }
 
-func New(client *kubernetesClient.Client, deploymentName string) (*Capture, error) {
+func New(client *kubernetesClient.Client, resultsPath, deploymentName string) (*Capture, error) {
 
 	if deploymentName == "" {
 		return nil, fmt.Errorf("deployment name can not be blank")
@@ -53,11 +54,12 @@ func New(client *kubernetesClient.Client, deploymentName string) (*Capture, erro
 	}
 
 	capture := &Capture{
-		client:     client,
-		Deployment: deploymentName,
-		OnRecord:   make(chan Record),
-		Errors:     make(chan error),
-		running:    make(chan bool),
+		client:      client,
+		Deployment:  deploymentName,
+		resultsPath: resultsPath,
+		OnRecord:    make(chan Record),
+		Errors:      make(chan error),
+		running:     make(chan bool),
 	}
 
 	return capture, nil
@@ -181,7 +183,7 @@ func (capture *Capture) startContainerCapture(pod *v1Core.Pod) error {
 
 func (capture *Capture) createFile(podName string) error {
 
-	filename := fmt.Sprintf("%s.csv", podName)
+	filename := fmt.Sprintf("%s/%s.csv", capture.resultsPath, podName)
 
 	var err error
 	capture.csvFile, err = os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
