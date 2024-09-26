@@ -1,0 +1,13 @@
+# Dashboard Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: pod-profiler
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    app.kubernetes.io/name: pod-profiler
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80

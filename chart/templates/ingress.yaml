@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pod-profiler
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: pod-profiler
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: '0'
+    nginx.ingress.kubernetes.io/proxy-buffering: 'off'
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: '500'
+    nginx.ingress.kubernetes.io/proxy-read-timeout: '500'
+    nginx.ingress.kubernetes.io/proxy-request-buffering: 'off'
+    nginx.ingress.kubernetes.io/proxy-send-timeout: '500'
+spec:
+  rules:
+    - host: dave.local.sps.tw-testing.com
+      http:
+        paths:
+          - path: /results
+            pathType: Prefix
+            backend:
+              service:
+                name: pod-profiler
+                port:
+                  number: 80
+
+
