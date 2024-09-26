@@ -194,7 +194,7 @@ func (capture *Capture) createFile(podName string) error {
 	writer := csv.NewWriter(capture.csvFile)
 	defer writer.Flush()
 
-	row := []string{"name", "cpu", "memory"}
+	row := []string{"time", "name", "cpu", "memory"}
 	err = writer.Write(row)
 	if err != nil {
 		return err
@@ -211,6 +211,7 @@ func (capture *Capture) saveRecord(record Record) error {
 
 	for _, container := range record.Pod.Containers {
 		row := []string{
+			time.Now().Format(time.TimeOnly),
 			container.Name,
 			strconv.FormatInt(container.Cpu, 10),
 			strconv.FormatInt(container.Memory, 10),
