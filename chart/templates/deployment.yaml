@@ -31,7 +31,7 @@ spec:
             - name: XDG_CONFIG_HOME
               value: /pod-profiler/config
             - name: PROFILER_CONFIG_FILENAME
-              value: config-kubernetes.yaml           
+              value: config-kubernetes.json
           resources:
             limits:
               cpu: {{ .Values.profiler.resources.limits.cpu }}
