@@ -1,12 +1,13 @@
 package profiler
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"pod_profiler/pkg/api/capture"
 	"pod_profiler/pkg/api/config"
-	httpserver "pod_profiler/pkg/api/http-server"
 	kubernetesClient "pod_profiler/pkg/api/kubernetes-client"
 
 	"github.com/fsnotify/fsnotify"
@@ -17,8 +18,6 @@ type Profiler struct {
 
 	// The client used to access kubernetes resources
 	K8sClient *kubernetesClient.Client
-
-	httpServer *httpserver.HttpServer
 
 	Errors chan error
 
@@ -44,17 +43,11 @@ func New() (*Profiler, error) {
 		return nil, err
 	}
 
-	httpServer, err := httpserver.New(config)
-	if err != nil {
-		return nil, err
-	}
-
 	return &Profiler{
-		Config:     config,
-		K8sClient:  K8sClient,
-		httpServer: httpServer,
-		Errors:     make(chan error),
-		running:    make(chan bool),
+		Config:    config,
+		K8sClient: K8sClient,
+		Errors:    make(chan error),
+		running:   make(chan bool),
 	}, nil
 
 }
@@ -97,8 +90,6 @@ func (profiler *Profiler) Start() error {
 
 	go profiler.Config.OnConfigChange(profiler.OnConfigChange)
 
-	go profiler.httpServer.Start()
-
 	go profiler.process()
 
 	profiler.running <- true
@@ -120,9 +111,15 @@ func (profiler *Profiler) process() {
 					profiler.Errors <- err
 				}
 
+				err = profiler.CreateCaptureList()
+				if err != nil {
+					profiler.Errors <- err
+				}
+
 				for _, capture := range profiler.captures {
 					go capture.StartCapture()
 				}
+
 			} else {
 				log.Default().Println("Stopping capture")
 				for _, capture := range profiler.captures {
@@ -171,4 +168,42 @@ func (profiler *Profiler) initialiseCaptures() error {
 	profiler.captures = captures
 
 	return nil
+}
+
+func (profiler *Profiler) CreateCaptureList() error {
+
+	listOfFiles := []string{}
+
+	files, err := os.ReadDir(profiler.Config.ResultsPath)
+	if err != nil {
+		return err
+	}
+
+	for _, file := range files {
+		if file.Name() != "index.json" {
+			listOfFiles = append(listOfFiles, file.Name())
+		}
+	}
+
+	bytes, err := json.Marshal(listOfFiles)
+	if err != nil {
+		return err
+	}
+
+	indexFile, err := os.OpenFile(path.Join(profiler.Config.ResultsPath, "index.json"), os.O_WRONLY|os.O_CREATE, 0777)
+	if err != nil {
+		return err
+	}
+
+	_, err = indexFile.Write(bytes)
+	if err != nil {
+		return err
+	}
+
+	err = indexFile.Close()
+	if err != nil {
+		return err
+	}
+	return nil
+
 }

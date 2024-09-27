@@ -11,8 +11,6 @@ profiler:
     limits:
       cpu: 500m
       memory: 50Mi
-http:
-  port: 80  
 results:
   path: ./results
 frontend:

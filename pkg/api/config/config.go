@@ -17,8 +17,6 @@ type Config struct {
 
 	PodLabels []string `json:"podlabels"`
 
-	HttpPort int `json:"httpport"`
-
 	ResultsPath string `json:"resultspath"`
 
 	*viper.Viper `json:"-"`
@@ -31,7 +29,6 @@ func Load(watchConfig bool) (*Config, error) {
 	config.Viper = viper.New()
 	config.Viper.SetDefault("podlabels", []string{})
 	config.Viper.SetDefault("namespace", defaults.NAMESPACE)
-	config.Viper.SetDefault("httpport", defaults.HTTP_PORT)
 	config.Viper.SetDefault("resultspath", defaults.RESULTS_PATH)
 
 	config.Viper.BindEnv("namespace", "NAMESPACE")
@@ -91,7 +88,6 @@ func (config *Config) VarDump() {
 	log.Default().Println("-------------------------------")
 	log.Default().Println("")
 	log.Default().Printf("namespace:  %s\n", config.Namespace)
-	log.Default().Printf("http port:  %v\n", config.HttpPort)
 	log.Default().Printf("results dir:  %s\n", config.ResultsPath)
 	log.Default().Printf("Pod Labels:\n")
 
