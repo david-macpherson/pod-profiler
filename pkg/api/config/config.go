@@ -38,7 +38,7 @@ func Load(watchConfig bool) (*Config, error) {
 
 	configName, configNameExists := os.LookupEnv("PROFILER_CONFIG_FILENAME")
 
-	configDirs, err := env.GetConfigDirectories("pod-profiler", false)
+	configDirs, err := env.GetConfigDirectories("pod-profiler-gatherer", false)
 	if err != nil {
 		return nil, err
 	}
