@@ -19,8 +19,8 @@ REGISTRY=registry.internal.tensor.works
 REPO="sps-"$USERNAME
 VERSION="0.0.0-devel"
 
-PROFILER_IMAGE=pod-profiler
-PROFILER_DOCKERFILE=.dockerfiles/pod-profiler.dockerfile
+PROFILER_IMAGE=pod-profiler-gatherer
+PROFILER_DOCKERFILE=.dockerfiles/pod-profiler-gatherer.dockerfile
 
 BUILD_PROFILER=false
 
@@ -175,7 +175,7 @@ function compile_golang(){
 # Builds and pushes the container. Uses dockerignore file and takes a string that lists all files to omit from the ignore
 #   $1 - Container tag
 #   $2 - Dockerfile
-#   $3 - A list of files to omit from dockerignore as a relative path from the repo root (e.g. '\n!bin/linux/amd64/pod-profiler\n!bin/linux/amd64/pod-profiler')
+#   $3 - A list of files to omit from dockerignore as a relative path from the repo root (e.g. '\n!bin/linux/amd64/pod-profiler-gatherer\n!bin/linux/amd64/pod-profiler-gatherer')
 function build_push(){
     TAG=$1
     DOCKERFILE=$2
@@ -201,7 +201,7 @@ function build_push(){
 # Build the profiler
 if [ "$BUILD_PROFILER" == "true" ]; then
     compile_golang
-    build_push $PROFILER_TAG $PROFILER_DOCKERFILE "\n!bin/linux/amd64/pod-profiler"
+    build_push $PROFILER_TAG $PROFILER_DOCKERFILE "\n!bin/linux/amd64/pod-profiler-gatherer"
 fi
 
 
