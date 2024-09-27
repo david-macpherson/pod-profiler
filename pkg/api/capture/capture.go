@@ -62,6 +62,18 @@ func New(client *kubernetesClient.Client, resultsPath, deploymentName string) (*
 		running:     make(chan bool),
 	}
 
+	pods, err := capture.GetPods()
+	if err != nil {
+		capture.Errors <- err
+	}
+
+	for _, pod := range pods {
+		err := capture.createFile(pod.GetName())
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return capture, nil
 
 }
@@ -104,11 +116,6 @@ func (capture *Capture) process() {
 				}
 
 				for _, pod := range pods {
-					err := capture.createFile(pod.GetName())
-					if err != nil {
-						capture.Errors <- err
-					}
-
 					go capture.startContainerCapture(pod)
 				}
 			} else {
@@ -184,9 +191,14 @@ func (capture *Capture) startContainerCapture(pod *v1Core.Pod) error {
 func (capture *Capture) createFile(podName string) error {
 
 	filename := fmt.Sprintf("%s/%s.csv", capture.resultsPath, podName)
+	flags := os.O_APPEND | os.O_WRONLY
+
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		flags = os.O_APPEND | os.O_WRONLY | os.O_CREATE
+	}
 
 	var err error
-	capture.csvFile, err = os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	capture.csvFile, err = os.OpenFile(filename, flags, 0777)
 	if err != nil {
 		return err
 	}
@@ -194,10 +206,12 @@ func (capture *Capture) createFile(podName string) error {
 	writer := csv.NewWriter(capture.csvFile)
 	defer writer.Flush()
 
-	row := []string{"time", "name", "cpu", "memory"}
-	err = writer.Write(row)
-	if err != nil {
-		return err
+	if flags == os.O_APPEND|os.O_WRONLY|os.O_CREATE {
+		headerRow := []string{"time", "name", "cpu", "memory"}
+		err = writer.Write(headerRow)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
