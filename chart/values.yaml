@@ -1,7 +1,7 @@
 profiler:
   registry: registry.internal.tensor.works
   repository: sps-dave
-  image: pod-profiler
+  image: pod-profiler-gatherer
   version: 0.0.0-devel
   resources:
     replicas: 1
@@ -15,3 +15,16 @@ http:
   port: 80  
 results:
   path: ./results
+frontend:
+  registry: registry.internal.tensor.works
+  repository: sps-dave
+  image: pod-profiler-frontend
+  version: 0.0.0-devel
+  resources:
+    replicas: 1
+    requests:
+      cpu: 500m 
+      memory: 50Mi
+    limits:
+      cpu: 500m
+      memory: 50Mi

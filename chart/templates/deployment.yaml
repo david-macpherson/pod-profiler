@@ -1,35 +1,39 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: pod-profiler
+  name: pod-profiler-gatherer
   namespace: {{ .Release.Namespace }}
   labels:
-    app.kubernetes.io/name: pod-profiler
+    app.kubernetes.io/name: pod-profiler-gatherer
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: pod-profiler
+      app.kubernetes.io/name: pod-profiler-gatherer
   template:
     metadata:
       creationTimestamp: null
       labels:
-        app.kubernetes.io/name: pod-profiler
+        app.kubernetes.io/name: pod-profiler-gatherer
     spec:
-      serviceAccountName: pod-profiler
+      serviceAccountName: pod-profiler-gatherer
       restartPolicy: Always
       terminationGracePeriodSeconds: 5
       volumes:
         - name: config-volume
           configMap:
-            name: pod-profiler
+            name: pod-profiler-gatherer
             defaultMode: 420
+        - name: results-volume
+          persistentVolumeClaim:
+            claimName: pod-profiler-results
       containers:
-        - name: pod-profiler
+        - name: pod-profiler-gatherer
           image: "{{ .Values.profiler.registry }}/{{ .Values.profiler.repository }}/{{ .Values.profiler.image }}:{{ .Values.profiler.version }}"
+          imagePullPolicy: Always
           env:
             - name: XDG_CONFIG_HOME
-              value: /pod-profiler/config
+              value: /pod-profiler-gatherer/config
             - name: PROFILER_CONFIG_FILENAME
               value: config-kubernetes.json
           resources:
@@ -41,8 +45,61 @@ spec:
               memory: {{ .Values.profiler.resources.requests.memory }}
           volumeMounts:
             - name: config-volume
-              mountPath: /pod-profiler/config/pod-profiler
+              mountPath: /pod-profiler-gatherer/config/pod-profiler-gatherer
+            - name: results-volume
+              mountPath: /pod-profiler-gatherer/results
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/os
+                    operator: In
+                    values:
+                      - linux
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pod-profiler-frontend
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: pod-profiler-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pod-profiler-frontend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pod-profiler-frontend
+    spec:
+      volumes:
+        - name: pod-profiler-frontend-volume
+          configMap:
+            name: pod-profiler-frontend
+        - name: results-volume
+          persistentVolumeClaim:
+            claimName: pod-profiler-results
+      containers:
+        - name: pod-profiler-frontend
+          image: "{{ .Values.frontend.registry }}/{{ .Values.frontend.repository }}/{{ .Values.frontend.image }}:{{ .Values.frontend.version }}"
           imagePullPolicy: Always
+          resources:
+            limits:
+              cpu: {{ .Values.profiler.resources.limits.cpu }}
+              memory: {{ .Values.profiler.resources.limits.memory }}
+            requests:
+              cpu: {{ .Values.profiler.resources.requests.cpu }}
+              memory: {{ .Values.profiler.resources.requests.memory }}
+          volumeMounts:
+          - name: pod-profiler-frontend-volume
+            mountPath: /etc/nginx/pod-profiler-frontend
+          - name: results-volume
+            mountPath: /www/results
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:

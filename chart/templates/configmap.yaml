@@ -1,10 +1,11 @@
+# pod-profiler-gatherer
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: pod-profiler
+  name: pod-profiler-gatherer
   namespace: {{ .Release.Namespace }}
   labels:
-    app.kubernetes.io/name: pod-profiler
+    app.kubernetes.io/name: pod-profiler-gatherer
 data:
   config-kubernetes.json: |
     {
@@ -24,3 +25,40 @@ data:
         "sps-signalling-server-demo"
       ]
     }
+#EOF
+
+---
+
+# pod-profiler-frontend
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pod-profiler-frontend
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: pod-profiler-frontend
+data:
+  nginx.conf: |
+    events {}
+    http {
+
+      include  /etc/nginx/mime.types;
+      
+      server {
+
+        listen 80 default_server;
+        listen [::]:80 default_server;
+
+        rewrite ^([^.]*[^/])$ $1/ redirect;
+        rewrite ^/[0-9a-z-]+(/|$)(.*) /$2 last;
+        root /www;
+
+        location /results {
+          add_header Access-Control-Allow-Origin *;
+          autoindex on;
+        }
+        
+      }
+    }
+# EOF

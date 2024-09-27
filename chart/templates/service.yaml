@@ -2,11 +2,11 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: pod-profiler
+  name: pod-profiler-frontend
   namespace: {{ .Release.Namespace }}
 spec:
   selector:
-    app.kubernetes.io/name: pod-profiler
+    app.kubernetes.io/name: pod-profiler-frontend
   ports:
   - protocol: TCP
     port: 80

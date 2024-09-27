@@ -18,11 +18,11 @@ spec:
     - host: dave.local.sps.tw-testing.com
       http:
         paths:
-          - path: /
+          - path: /pod-profiler
             pathType: Prefix
             backend:
               service:
-                name: pod-profiler
+                name: pod-profiler-frontend
                 port:
                   number: 80
 
