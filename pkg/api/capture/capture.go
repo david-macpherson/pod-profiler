@@ -28,8 +28,8 @@ type Capture struct {
 }
 
 type Record struct {
-	DateStamp time.Time `json:"datestamp"`
-	Pod       Pod       `json:"pod"`
+	DateStamp int64 `json:"datestamp"`
+	Pod       Pod   `json:"pod"`
 }
 
 type Pod struct {
@@ -169,7 +169,7 @@ func (capture *Capture) startContainerCapture(pod *v1Core.Pod) error {
 		lastCapture = data.Timestamp
 
 		record := Record{
-			DateStamp: data.Timestamp.Time,
+			DateStamp: data.Timestamp.Unix(),
 			Pod: Pod{
 				Name: pod.GetName(),
 			},
@@ -225,7 +225,7 @@ func (capture *Capture) saveRecord(record Record) error {
 
 	for _, container := range record.Pod.Containers {
 		row := []string{
-			time.Now().Format(time.TimeOnly),
+			strconv.FormatInt(time.Now().Unix(), 10),
 			container.Name,
 			strconv.FormatInt(container.Cpu, 10),
 			strconv.FormatInt(container.Memory, 10),
