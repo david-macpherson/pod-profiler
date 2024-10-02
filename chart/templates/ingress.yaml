@@ -15,7 +15,7 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-send-timeout: '500'
 spec:
   rules:
-    - host: dave.local.sps.tw-testing.com
+    - host: {{ .Values.frontend.hostname }}
       http:
         paths:
           - path: /pod-profiler

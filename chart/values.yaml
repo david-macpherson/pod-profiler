@@ -18,6 +18,7 @@ frontend:
   repository: sps-dave
   image: pod-profiler-frontend
   version: 0.0.0-devel
+  hostname: dave.local.sps.tw-testing.com
   resources:
     replicas: 1
     requests:
